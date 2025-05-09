@@ -1,26 +1,25 @@
 import torch
+import torch.nn as nn
 
 # Load saved model data
-model_data = torch.load('car_values.pth')
-weights = model_data['weights']
-bias = model_data['bias']
+model_data = torch.load('car_values_nn.pth')
+
+# rebuild model structure
+model = nn.Sequential(
+    nn.Linear(2, 16),
+    nn.ReLU(),
+    nn.Linear(16, 1)
+)
+model.load_state_dict(model_data['model_state'])
+model.eval()
+
 min_vals = model_data['min_vals']
 max_vals = model_data['max_vals']
 
-# Input: Gene's car data (age in years, mileage in thousands)
-gene = torch.tensor([25.0, 219.875])  # Make sure values are floats
-thor = torch.tensor([13.0, 150.0])
+# normalize test input
+test_input = torch.tensor([[25.0, 219.875]])
+test_input_normalized = (test_input - min_vals) / (max_vals - min_vals)
 
-# Normalize using saved min/max
-gene_normalized = (gene - min_vals[0]) / (max_vals[0] - min_vals[0])
-gene_normalized = gene_normalized.view(-1)  # Ensure it's a 1D tensor
-
-thor_normalized = (thor - min_vals[0]) / (max_vals[0] - min_vals[0])
-thor_normalized = thor_normalized.view(-1)
-
-# Make prediction
-gene_prediction = weights @ gene_normalized + bias
-thor_prediction = weights @ thor_normalized + bias
-
-print(f"Estimated price for Gene: ${gene_prediction.item():.2f}")
-print(f"Estimated price for Thor: ${thor_prediction.item():.2f}")
+# predict
+prediction = model(test_input_normalized).item()
+print(f"Predicted price for Gene using neural networks: ${prediction:.2f}")
